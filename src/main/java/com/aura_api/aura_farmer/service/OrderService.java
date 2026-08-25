@@ -76,30 +76,29 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
 
         try {
-            // 4. Crear la preferencia en Mercado Pago
+            // 4. Crear la preferencia limpia en Mercado Pago
             PreferenceItemRequest item = PreferenceItemRequest.builder()
+                    .id(savedOrder.getId().toString())
                     .title("Aura Farm: +" + savedOrder.getAuraAmount() + "% Aura (@" + user.getUsername() + ")")
                     .quantity(1)
-                    .unitPrice(totalAmount)
+                    .unitPrice(totalAmount.setScale(2, java.math.RoundingMode.HALF_UP))
                     .currencyId("ARS")
                     .build();
 
-            // 1. Crear el objeto payer con el mail del usuario
             PreferencePayerRequest payer = PreferencePayerRequest.builder()
                     .email(user.getEmail())
                     .build();
+
             PreferenceRequest preferenceRequest = PreferenceRequest.builder()
                     .items(List.of(item))
-                    .payer(payer) // 2. Pasar el payer a la preferencia
+                    .payer(payer)
                     .backUrls(PreferenceBackUrlsRequest.builder()
                             .success(successUrl)
                             .failure(failureUrl)
                             .pending(failureUrl)
                             .build())
-                    .autoReturn("approved")
                     .notificationUrl(notificationUrl)
                     .externalReference(savedOrder.getId().toString())
-                    .statementDescriptor("AURA FARM")
                     .build();
 
             PreferenceClient client = new PreferenceClient();
