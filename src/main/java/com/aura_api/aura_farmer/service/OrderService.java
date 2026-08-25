@@ -84,14 +84,19 @@ public class OrderService {
                     .currencyId("ARS")
                     .build();
 
+            // 1. Crear el objeto payer con el mail del usuario
+            PreferencePayerRequest payer = PreferencePayerRequest.builder()
+                    .email(user.getEmail())
+                    .build();
             PreferenceRequest preferenceRequest = PreferenceRequest.builder()
                     .items(List.of(item))
+                    .payer(payer) // 2. Pasar el payer a la preferencia
                     .backUrls(PreferenceBackUrlsRequest.builder()
                             .success(successUrl)
                             .failure(failureUrl)
                             .pending(failureUrl)
                             .build())
-                    .autoReturn("approved")
+//                    .autoReturn("approved")
                     .notificationUrl(notificationUrl)
                     .externalReference(savedOrder.getId().toString())
                     .build();
