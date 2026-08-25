@@ -34,13 +34,13 @@ public class OrderService {
     @Value("${mercadopago.access-token}")
     private String mpAccessToken;
 
-    @Value("${mercadopago.back-url.success:http://localhost:3000/success}")
+    @Value("${mercadopago.back-url.success:https://aura-frontend-wine.vercel.app}")
     private String successUrl;
 
-    @Value("${mercadopago.back-url.failure:http://localhost:3000/failure}")
+    @Value("${mercadopago.back-url.failure:https://aura-frontend-wine.vercel.app}")
     private String failureUrl;
 
-    @Value("${mercadopago.notification-url:http://localhost:8080/api/v1/webhooks/mercadopago}")
+    @Value("${mercadopago.notification-url:https://aura-backend-production-6372.up.railway.app/api/v1/webhooks/mercadopago}")
     private String notificationUrl;
 
     private final OrderRepository orderRepository;
@@ -85,12 +85,12 @@ public class OrderService {
                     .build();
 
             // 1. Crear el objeto payer con el mail del usuario
-            PreferencePayerRequest payer = PreferencePayerRequest.builder()
-                    .email(user.getEmail())
-                    .build();
+//            PreferencePayerRequest payer = PreferencePayerRequest.builder()
+//                    .email(user.getEmail())
+//                    .build();
             PreferenceRequest preferenceRequest = PreferenceRequest.builder()
                     .items(List.of(item))
-                    .payer(payer) // 2. Pasar el payer a la preferencia
+//                    .payer(payer) // 2. Pasar el payer a la preferencia
                     .backUrls(PreferenceBackUrlsRequest.builder()
                             .success(successUrl)
                             .failure(failureUrl)
