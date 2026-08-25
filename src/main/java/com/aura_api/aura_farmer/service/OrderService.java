@@ -86,8 +86,8 @@ public class OrderService {
                     .build();
 
             PreferencePayerRequest payer = PreferencePayerRequest.builder()
-//                    .email(user.getEmail())
-                    .email("test_user_123456@testuser.com")
+                    .email(user.getEmail())
+//                    .email("test_user_123456@testuser.com")
                     .build();
 
             PreferenceRequest preferenceRequest = PreferenceRequest.builder()
@@ -115,8 +115,8 @@ public class OrderService {
                     .username(user.getUsername())
                     .auraAmount(savedOrder.getAuraAmount())
                     .amountArs(savedOrder.getAmountArs())
-//                    .initPoint(preference.getInitPoint())
-                    .initPoint(preference.getSandboxInitPoint())
+                    .initPoint(preference.getInitPoint())  //prod
+//                    .initPoint(preference.getSandboxInitPoint()) //test
                     .build();
 
         } catch (Exception e) {
