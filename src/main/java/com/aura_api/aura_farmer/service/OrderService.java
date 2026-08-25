@@ -86,7 +86,8 @@ public class OrderService {
                     .build();
 
             PreferencePayerRequest payer = PreferencePayerRequest.builder()
-                    .email(user.getEmail())
+//                    .email(user.getEmail())
+                    .email("test_user_123456@testuser.com")
                     .build();
 
             PreferenceRequest preferenceRequest = PreferenceRequest.builder()
