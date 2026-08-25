@@ -89,8 +89,9 @@ public class OrderService {
                     .backUrls(PreferenceBackUrlsRequest.builder()
                             .success(successUrl)
                             .failure(failureUrl)
+                            .pending(failureUrl)
                             .build())
-//                    .autoReturn("approved")
+                    .autoReturn("approved")
                     .notificationUrl(notificationUrl)
                     .externalReference(savedOrder.getId().toString())
                     .build();
