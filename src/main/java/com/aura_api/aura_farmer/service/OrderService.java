@@ -74,30 +74,26 @@ public class OrderService {
                 .build();
 
         Order savedOrder = orderRepository.save(order);
-
         try {
-            // 4. Crear la preferencia limpia en Mercado Pago
+            // 4. Crear item limpio sin caracteres especiales conflictivos
             PreferenceItemRequest item = PreferenceItemRequest.builder()
                     .id(savedOrder.getId().toString())
-                    .title("Aura Farm: +" + savedOrder.getAuraAmount() + "% Aura (@" + user.getUsername() + ")")
+                    .title("Aura Farm " + savedOrder.getAuraAmount() + " Aura")
                     .quantity(1)
                     .unitPrice(totalAmount.setScale(2, java.math.RoundingMode.HALF_UP))
                     .currencyId("ARS")
                     .build();
 
-//            PreferencePayerRequest payer = PreferencePayerRequest.builder()
-//                    .email(user.getEmail())
-////                    .email("test_user_123456@testuser.com")
-//                    .build();
+            // URLs con paths definidos
+            PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
+                    .success("https://aura-frontend-wine.vercel.app/")
+                    .failure("https://aura-frontend-wine.vercel.app/")
+                    .pending("https://aura-frontend-wine.vercel.app/")
+                    .build();
 
             PreferenceRequest preferenceRequest = PreferenceRequest.builder()
                     .items(List.of(item))
-//                    .payer(payer)
-                    .backUrls(PreferenceBackUrlsRequest.builder()
-                            .success(successUrl)
-                            .failure(failureUrl)
-                            .pending(failureUrl)
-                            .build())
+                    .backUrls(backUrls)
                     .notificationUrl(notificationUrl)
                     .externalReference(savedOrder.getId().toString())
                     .build();
@@ -109,14 +105,13 @@ public class OrderService {
             savedOrder.setMpPreferenceId(preference.getId());
             orderRepository.save(savedOrder);
 
-            // 5. Retornar el link real de Mercado Pago (initPoint)
+            // 5. Retornar sandboxInitPoint
             return OrderResponseDTO.builder()
                     .orderId(savedOrder.getId())
                     .username(user.getUsername())
                     .auraAmount(savedOrder.getAuraAmount())
                     .amountArs(savedOrder.getAmountArs())
-//                    .initPoint(preference.getInitPoint())  //prod
-                    .initPoint(preference.getSandboxInitPoint()) //test
+                    .initPoint(preference.getSandboxInitPoint())
                     .build();
 
         } catch (Exception e) {
