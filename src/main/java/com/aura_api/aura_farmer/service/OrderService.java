@@ -115,8 +115,8 @@ public class OrderService {
                     .username(user.getUsername())
                     .auraAmount(savedOrder.getAuraAmount())
                     .amountArs(savedOrder.getAmountArs())
-                    .initPoint(preference.getInitPoint())  //prod
-//                    .initPoint(preference.getSandboxInitPoint()) //test
+//                    .initPoint(preference.getInitPoint())  //prod
+                    .initPoint(preference.getSandboxInitPoint()) //test
                     .build();
 
         } catch (Exception e) {
