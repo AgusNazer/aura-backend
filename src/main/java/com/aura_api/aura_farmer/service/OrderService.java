@@ -85,14 +85,14 @@ public class OrderService {
                     .currencyId("ARS")
                     .build();
 
-            PreferencePayerRequest payer = PreferencePayerRequest.builder()
-                    .email(user.getEmail())
-//                    .email("test_user_123456@testuser.com")
-                    .build();
+//            PreferencePayerRequest payer = PreferencePayerRequest.builder()
+//                    .email(user.getEmail())
+////                    .email("test_user_123456@testuser.com")
+//                    .build();
 
             PreferenceRequest preferenceRequest = PreferenceRequest.builder()
                     .items(List.of(item))
-                    .payer(payer)
+//                    .payer(payer)
                     .backUrls(PreferenceBackUrlsRequest.builder()
                             .success(successUrl)
                             .failure(failureUrl)
