@@ -12,7 +12,6 @@ import com.mercadopago.client.payment.PaymentClient;
 import com.mercadopago.client.preference.*;
 import com.mercadopago.resources.payment.Payment;
 import com.mercadopago.resources.preference.Preference;
-import com.mercadopago.client.preference.PreferenceBackUrlsRequest;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,10 +33,13 @@ public class OrderService {
     @Value("${mercadopago.access-token}")
     private String mpAccessToken;
 
-    @Value("${mercadopago.back-url.success:https://aura-frontend-wine.vercel.app}")
+    @Value("${mercadopago.sandbox:false}")
+    private boolean isSandbox;
+
+    @Value("${mercadopago.back-url.success:https://aura-frontend-wine.vercel.app/}")
     private String successUrl;
 
-    @Value("${mercadopago.back-url.failure:https://aura-frontend-wine.vercel.app}")
+    @Value("${mercadopago.back-url.failure:https://aura-frontend-wine.vercel.app/}")
     private String failureUrl;
 
     @Value("${mercadopago.notification-url:https://aura-backend-production-6372.up.railway.app/api/v1/webhooks/mercadopago}")
@@ -51,21 +53,19 @@ public class OrderService {
     @PostConstruct
     public void initMp() {
         MercadoPagoConfig.setAccessToken(mpAccessToken);
+        log.info("Mercado Pago inicializado. Modo Sandbox activo: {}", isSandbox);
     }
 
     @Transactional
     public OrderResponseDTO createOrder(CreateOrderRequestDTO request) {
-        // 1. Obtener o registrar usuario
         User user = userService.getOrCreateUser(
                 request.getUsername(),
                 request.getEmail(),
                 request.getCustomPhrase()
         );
 
-        // 2. Calcular monto en ARS
         BigDecimal totalAmount = PRICE_PER_AURA_PERCENT.multiply(BigDecimal.valueOf(request.getAuraAmount()));
 
-        // 3. Crear la orden pendiente en base de datos
         Order order = Order.builder()
                 .user(user)
                 .auraAmount(request.getAuraAmount())
@@ -74,8 +74,8 @@ public class OrderService {
                 .build();
 
         Order savedOrder = orderRepository.save(order);
+
         try {
-            // 4. Crear item limpio sin caracteres especiales conflictivos
             PreferenceItemRequest item = PreferenceItemRequest.builder()
                     .id(savedOrder.getId().toString())
                     .title("Aura Farm " + savedOrder.getAuraAmount() + " Aura")
@@ -84,11 +84,10 @@ public class OrderService {
                     .currencyId("ARS")
                     .build();
 
-            // URLs con paths definidos
             PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
-                    .success("https://aura-frontend-wine.vercel.app/")
-                    .failure("https://aura-frontend-wine.vercel.app/")
-                    .pending("https://aura-frontend-wine.vercel.app/")
+                    .success(successUrl)
+                    .failure(failureUrl)
+                    .pending(failureUrl)
                     .build();
 
             PreferenceRequest preferenceRequest = PreferenceRequest.builder()
@@ -101,17 +100,18 @@ public class OrderService {
             PreferenceClient client = new PreferenceClient();
             Preference preference = client.create(preferenceRequest);
 
-            // Guardar el preferenceId por auditoría
             savedOrder.setMpPreferenceId(preference.getId());
             orderRepository.save(savedOrder);
 
-            // 5. Retornar sandboxInitPoint
+            // Determinar el initPoint según la bandera de configuración
+            String targetInitPoint = isSandbox ? preference.getSandboxInitPoint() : preference.getInitPoint();
+
             return OrderResponseDTO.builder()
                     .orderId(savedOrder.getId())
                     .username(user.getUsername())
                     .auraAmount(savedOrder.getAuraAmount())
                     .amountArs(savedOrder.getAmountArs())
-                    .initPoint(preference.getSandboxInitPoint())
+                    .initPoint(targetInitPoint)
                     .build();
 
         } catch (Exception e) {
@@ -131,7 +131,6 @@ public class OrderService {
                 return;
             }
 
-            // El externalReference contiene el UUID de nuestra Order
             UUID orderId = UUID.fromString(payment.getExternalReference());
             completeOrder(orderId, paymentId);
 
@@ -146,24 +145,20 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Orden no encontrada: " + orderId));
 
-        // Idempotencia: Si ya está aprobada, no volvemos a sumar
         if (OrderStatus.APPROVED.equals(order.getStatus())) {
             log.info("Orden ID={} ya estaba aprobada previamente.", orderId);
             return;
         }
 
-        // Marcar orden como aprobada
         order.setStatus(OrderStatus.APPROVED);
         order.setMpPaymentId(mpPaymentId);
         orderRepository.save(order);
 
-        // Sumar Aura al usuario en PostgreSQL
         User user = order.getUser();
         long newTotalAura = user.getAuraPercentage() + order.getAuraAmount();
         user.setAuraPercentage(newTotalAura);
         userRepository.save(user);
 
-        // Sincronizar el nuevo puntaje en Redis para el Leaderboard en tiempo real
         leaderboardService.updateUserAura(user.getUsername(), newTotalAura);
         log.info("Aura acreditada exitosamente: @{} ahora tiene {}% de Aura", user.getUsername(), newTotalAura);
     }
